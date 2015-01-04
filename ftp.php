@@ -45,17 +45,18 @@ class ftp{
 
    private $connection_type;
 
-   private $disabled_functions = ['connect', 'ssl_connect', 'close'];
+   private $disabled_functions = ['connect', 'ssl_connect', 'close', 'quit'];
 
 
-   public function __construct($url, $port=21, $timeout=90, $require_ssl=false){
+   public function __construct($url, $port=21, $timeout=90, $ssl=false){
 
       $url = preg_replace('#^(ftp://|)(.*)$#msi', '$2', $url);
 
-      $ftp = ftp_ssl_connect($url, $port, $timeout);
-
-      if($ftp) $this->connection_type = 'SSL-FTP';
-      elseif($require_ssl) throw new FTP_Exception('FTP: Cannot establish encrypted connection to "'.$url.'".');
+      if($ssl){
+         $ftp = ftp_ssl_connect($url, $port, $timeout);
+         if($ftp) $this->connection_type = 'SSL-FTP';
+         else throw new FTP_Exception('FTP: Cannot establish encrypted connection to "'.$url.'".');
+      }
       else{
          $ftp = ftp_connect($url, $port, $timeout);
          if($ftp) $this->connection_type = 'FTP';
@@ -67,7 +68,6 @@ class ftp{
 
 
    public function close(){
-      @ftp_close($this->connection);
       $this->__destruct();
    }
 
@@ -96,7 +96,7 @@ class ftp{
          array_unshift($arguments, $this->connection);
          return call_user_func_array('ftp_'.$function, $arguments);
       }
-      else throw new FTP_Exception('FTP: Function "'.$function.'" does not exist.');
+      else throw new FTP_Exception('FTP: Method "'.$function.'" does not exist.');
    }
 
 
@@ -105,7 +105,9 @@ class ftp{
    }
 
 
-   //function __destruct(){}
+   function __destruct(){
+      @ftp_close($this->connection);
+   }
 
 }
 
